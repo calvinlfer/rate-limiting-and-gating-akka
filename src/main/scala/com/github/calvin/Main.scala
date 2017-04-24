@@ -29,10 +29,10 @@ object Main extends App with RestApi {
   val bindingFuture = Http().bindAndHandle(routes, "localhost", 9001)
   bindingFuture.onComplete {
     case Success(serverBinding) =>
-      println(serverBinding.localAddress)
+      system.log.info(s"Bound to {}", serverBinding.localAddress)
 
     case Failure(error) =>
-      println(error.getMessage)
+      system.log.error(error.getMessage)
       system.terminate()
   }
 }
