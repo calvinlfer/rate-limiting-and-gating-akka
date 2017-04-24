@@ -23,19 +23,13 @@ limiting and gating behavior. The Circuit Breaker wraps the Rate Limiter so if y
 Limiter will fail and if you exceed the Rate Limiter too many times, the Circuit Breaker will open.
 
 ```scala
-  val breaker = CircuitBreaker(context.system.scheduler, maxFailures = 5, callTimeout = 5.seconds, resetTimeout = 10.seconds)
-  val limiter = new RateLimiter(requests = 10, 10.seconds)
-  
-  // in receive block
   breaker.withCircuitBreaker {
     limiter.call {
-      Future.successful {
-        replyTo ! NumbersAdded(a, b, a + b)
-      }
+      Future.successful(NumbersAdded(a, b, a + b)) pipeTo theSender
     }
   }.recover {
-    case RateLimitExceeded => Future.failed(AddLimited) pipeTo replyTo
-    case _: CircuitBreakerOpenException => Future.failed(AddGated) pipeTo replyTo
+    case RateLimitExceeded => Future.failed(AddLimited) pipeTo theSender
+    case _: CircuitBreakerOpenException => Future.failed(AddGated) pipeTo theSender
   }
 ```
 

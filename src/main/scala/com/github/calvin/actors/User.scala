@@ -18,16 +18,14 @@ class User extends Actor with ActorLogging {
   override def receive: Receive = {
     case AddNumbers(a, b) =>
       log.info(s"Adding numbers: {}, {}", a, b)
-      val replyTo = sender()
+      val theSender = sender()
       breaker.withCircuitBreaker {
         limiter.call {
-          Future.successful {
-            replyTo ! NumbersAdded(a, b, a + b)
-          }
+          Future.successful(NumbersAdded(a, b, a + b)) pipeTo theSender
         }
       }.recover {
-        case RateLimitExceeded => Future.failed(AddLimited) pipeTo replyTo
-        case _: CircuitBreakerOpenException => Future.failed(AddGated) pipeTo replyTo
+        case RateLimitExceeded => Future.failed(AddLimited) pipeTo theSender
+        case _: CircuitBreakerOpenException => Future.failed(AddGated) pipeTo theSender
       }
 
     case e =>
